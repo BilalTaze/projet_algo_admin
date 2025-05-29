@@ -4,20 +4,22 @@ namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity]
-class Message
-{
+
+
+class Message {
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column(type: 'integer')]
-    private $id;
+    private ?int $id;
 
     #[ORM\Column(type: 'text')]
-    private $contenu;
+    private string $content;
 
     #[ORM\Column(type: 'datetime')]
-    private $date;
+    private \DateTimeInterface $createdAt;
 
-    // Ajoute une relation ManyToOne vers User si tu veux savoir qui a envoyé le message
-    // Ajoute les getters et setters
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    private User $sender;
+
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    private User $receiver;
 }
