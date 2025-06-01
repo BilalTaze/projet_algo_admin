@@ -23,7 +23,7 @@ class Message
     private ?string $content = null;
 
     #[ORM\Column]
-    private ?\DateTimeImmutable $senAt = null;
+    private ?\DateTimeImmutable $sentAt = null;
 
     public function getId(): ?int
     {
@@ -66,14 +66,14 @@ class Message
         return $this;
     }
 
-    public function getSenAt(): ?\DateTimeImmutable
+    public function getSentAt(): ?\DateTimeImmutable
     {
-        return $this->senAt;
+        return $this->sentAt;
     }
 
-    public function setSenAt(\DateTimeImmutable $senAt): static
+    public function setSentAt(\DateTimeImmutable $sentAt): static
     {
-        $this->senAt = $senAt;
+        $this->sentAt = $sentAt;
 
         return $this;
     }

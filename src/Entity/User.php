@@ -4,13 +4,15 @@ namespace App\Entity;
 
 use Doctrine\Common\Collections\Collection;
 use Doctrine\Common\Collections\ArrayCollection;
+use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 
 use App\Repository\UserRepository;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: '`user`')]
-class User
+class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\OneToMany(mappedBy: 'user1', targetEntity: Friendship::class)]
     private Collection $friendshipsInitiated;
@@ -132,5 +134,27 @@ class User
         $this->createdAt = $createdAt;
 
         return $this;
+    }
+
+    public function getUserIdentifier(): string
+    {
+        return $this->email;
+    }
+
+    public function getRoles(): array
+    {
+        return ['ROLE_USER'];
+    }
+
+    public function eraseCredentials(): void {}
+
+    public function getFriendshipsInitiated(): Collection
+    {
+        return $this->friendshipsInitiated;
+    }
+
+    public function getFriendshipsReceived(): Collection
+    {
+        return $this->friendshipsReceived;
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\Post;
+use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -15,29 +16,47 @@ class PostRepository extends ServiceEntityRepository
     {
         parent::__construct($registry, Post::class);
     }
+    public function findVisiblePostsForUser(User $currentUser): array
+    {
+        $qb = $this->createQueryBuilder('p')
+            ->leftJoin('p.author', 'a')
+            ->addSelect('a')
+            ->orderBy('p.createdAt', 'DESC');
 
-    //    /**
-    //     * @return Post[] Returns an array of Post objects
-    //     */
-    //    public function findByExampleField($value): array
-    //    {
-    //        return $this->createQueryBuilder('p')
-    //            ->andWhere('p.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->orderBy('p.id', 'ASC')
-    //            ->setMaxResults(10)
-    //            ->getQuery()
-    //            ->getResult()
-    //        ;
-    //    }
+        return $qb->where('p.visibility = :public')
+            ->orWhere('p.author = :user')
+            ->orWhere(
+                $qb->expr()->andX(
+                    $qb->expr()->eq('p.visibility', ':friends'),
+                    $qb->expr()->in('p.author', ':friendList')
+                )
+            )
+            ->setParameter('public', 'public')
+            ->setParameter('user', $currentUser)
+            ->setParameter('friends', 'friends')
+            ->setParameter('friendList', $this->getFriendIds($currentUser))
+            ->getQuery()
+            ->getResult();
+    }
 
-    //    public function findOneBySomeField($value): ?Post
-    //    {
-    //        return $this->createQueryBuilder('p')
-    //            ->andWhere('p.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->getQuery()
-    //            ->getOneOrNullResult()
-    //        ;
-    //    }
+    private function getFriendIds(User $user): array
+    {
+        $friends = [];
+
+        // amitiés envoyées et acceptées
+        foreach ($user->getFriendshipsInitiated() as $f) {
+            if ($f->getStatus() === 'accepted') {
+                $friends[] = $f->getUser2()->getId();
+            }
+        }
+
+        // amitiés reçues et acceptées
+        foreach ($user->getFriendshipsReceived() as $f) {
+            if ($f->getStatus() === 'accepted') {
+                $friends[] = $f->getUser1()->getId();
+            }
+        }
+
+        return $friends;
+    }
 }
