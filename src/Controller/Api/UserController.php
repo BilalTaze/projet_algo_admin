@@ -9,6 +9,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use App\Entity\User;
+use App\Repository\UserRepository;
 
 class UserController extends AbstractController
 {
@@ -51,5 +52,25 @@ class UserController extends AbstractController
         $em->flush();
 
         return $this->json(['message' => 'User created.'], 201);
+    }
+
+    #[Route('/api/users', name: 'api_users_list', methods: ['GET'])]
+    public function listUsers(UserRepository $repo): JsonResponse
+    {
+        $me = $this->getUser();
+
+        $users = $repo->createQueryBuilder('u')
+            ->where('u != :me')
+            ->setParameter('me', $me)
+            ->getQuery()
+            ->getResult();
+
+        $data = array_map(fn($u) => [
+            'id' => $u->getId(),
+            'name' => $u->getName(),
+            'email' => $u->getEmail(),
+        ], $users);
+
+        return $this->json($data);
     }
 }

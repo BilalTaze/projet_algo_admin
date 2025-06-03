@@ -16,14 +16,30 @@ class PostRepository extends ServiceEntityRepository
     {
         parent::__construct($registry, Post::class);
     }
+
     public function findVisiblePostsForUser(User $currentUser): array
     {
+        $friendIds = [];
+
+        foreach ($currentUser->getFriendshipsInitiated() as $f) {
+            if ($f->getStatus() === 'accepted') {
+                $friendIds[] = $f->getUser2()->getId();
+            }
+        }
+
+        foreach ($currentUser->getFriendshipsReceived() as $f) {
+            if ($f->getStatus() === 'accepted') {
+                $friendIds[] = $f->getUser1()->getId();
+            }
+        }
+
         $qb = $this->createQueryBuilder('p')
             ->leftJoin('p.author', 'a')
             ->addSelect('a')
             ->orderBy('p.createdAt', 'DESC');
 
-        return $qb->where('p.visibility = :public')
+        return $qb
+            ->where('p.visibility = :public')
             ->orWhere('p.author = :user')
             ->orWhere(
                 $qb->expr()->andX(
@@ -34,7 +50,7 @@ class PostRepository extends ServiceEntityRepository
             ->setParameter('public', 'public')
             ->setParameter('user', $currentUser)
             ->setParameter('friends', 'friends')
-            ->setParameter('friendList', $this->getFriendIds($currentUser))
+            ->setParameter('friendList', $friendIds)
             ->getQuery()
             ->getResult();
     }

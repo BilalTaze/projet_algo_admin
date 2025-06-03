@@ -15,7 +15,8 @@ final class PostController extends AbstractController
     #[Route('/api/posts', name: 'api_posts_list', methods: ['GET'])]
     public function index(PostRepository $postRepository): JsonResponse
     {
-        $posts = $postRepository->findBy([], ['createdAt' => 'DESC']);
+        $user = $this->getUser();
+        $posts = $postRepository->findVisiblePostsForUser($user);
 
         $data = [];
 
