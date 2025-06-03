@@ -2,49 +2,77 @@
 
 namespace App\Entity;
 
-use Doctrine\ORM\Mapping as ORM;
-use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
+use Doctrine\Common\Collections\Collection;
+use Doctrine\Common\Collections\ArrayCollection;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 
-#[ORM\Entity]
-#[ORM\Table(name: "app_user")]
-#[UniqueEntity(fields: ['username'], message: 'There is already an account with this username')]
+use App\Repository\UserRepository;
+use Doctrine\ORM\Mapping as ORM;
+
+#[ORM\Entity(repositoryClass: UserRepository::class)]
+#[ORM\Table(name: '`user`')]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
+    #[ORM\OneToMany(mappedBy: 'user1', targetEntity: Friendship::class)]
+    private Collection $friendshipsInitiated;
+
+    #[ORM\OneToMany(mappedBy: 'user2', targetEntity: Friendship::class)]
+    private Collection $friendshipsReceived;
+
+    #[ORM\OneToMany(mappedBy: 'author', targetEntity: Post::class)]
+    private Collection $posts;
+
+    #[ORM\OneToMany(mappedBy: 'sender', targetEntity: Message::class)]
+    private Collection $messagesSent;
+
+    #[ORM\OneToMany(mappedBy: 'receiver', targetEntity: Message::class)]
+    private Collection $messagesReceived;
+
+    #[ORM\OneToMany(mappedBy: 'owner', targetEntity: Notification::class)]
+    private Collection $notifications;
+
+    #[ORM\ManyToMany(targetEntity: Interest::class, inversedBy: 'users')]
+    private Collection $interests;
+
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column(type: 'integer')]
+    #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column(type: 'string', length: 180, unique: true)]
-    private string $username;
+    #[ORM\Column(length: 255)]
+    private ?string $name = null;
 
-    #[ORM\Column(type: 'string')]
-    private string $password;
-
-    #[ORM\Column(type: 'json')]
-    private array $roles = [];
-
-    #[ORM\Column]
-    private bool $isVerified = false;
-
-    #[ORM\Column(type: 'string', length: 180, unique: true)]
+    #[ORM\Column(length: 255)]
     private ?string $email = null;
+
+    #[ORM\Column(length: 255)]
+    private ?string $password = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $image = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $bio = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $createdAt = null;
 
     public function getId(): ?int
     {
         return $this->id;
     }
 
-    public function getUsername(): string
+    public function getName(): ?string
     {
-        return $this->username;
+        return $this->name;
     }
 
-    public function setUsername(string $username): self
+    public function setName(string $name): static
     {
-        $this->username = $username;
+        $this->name = $name;
+
         return $this;
     }
 
@@ -53,57 +81,80 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->email;
     }
 
-    public function setEmail(string $email): self
+    public function setEmail(string $email): static
     {
         $this->email = $email;
+
         return $this;
     }
 
-    public function getPassword(): string
+    public function getPassword(): ?string
     {
         return $this->password;
     }
 
-    public function setPassword(string $password): self
+    public function setPassword(string $password): static
     {
         $this->password = $password;
+
         return $this;
     }
 
-    public function getRoles(): array
+    public function getImage(): ?string
     {
-        $roles = $this->roles;
-        if (!in_array('ROLE_USER', $roles)) {
-            $roles[] = 'ROLE_USER';
-        }
-        return $roles;
+        return $this->image;
     }
 
-    public function setRoles(array $roles): self
+    public function setImage(?string $image): static
     {
-        $this->roles = $roles;
+        $this->image = $image;
+
         return $this;
     }
 
-    public function eraseCredentials(): void
+    public function getBio(): ?string
     {
-        // effacer les données sensibles si nécessaire
+        return $this->bio;
+    }
+
+    public function setBio(?string $bio): static
+    {
+        $this->bio = $bio;
+
+        return $this;
+    }
+
+    public function getCreatedAt(): ?\DateTimeImmutable
+    {
+        return $this->createdAt;
+    }
+
+    public function setCreatedAt(?\DateTimeImmutable $createdAt): static
+    {
+        $this->createdAt = $createdAt;
+
+        return $this;
     }
 
     public function getUserIdentifier(): string
     {
-        return $this->email ?? '';
+        return $this->email;
     }
 
-    public function isVerified(): bool
+    public function getRoles(): array
     {
-        return $this->isVerified;
+        return ['ROLE_USER'];
     }
 
-    public function setIsVerified(bool $isVerified): static
-    {
-        $this->isVerified = $isVerified;
+    public function eraseCredentials(): void {}
 
-        return $this;
+    public function getFriendshipsInitiated(): Collection
+    {
+        return $this->friendshipsInitiated;
+    }
+
+    public function getFriendshipsReceived(): Collection
+    {
+        return $this->friendshipsReceived;
     }
 }

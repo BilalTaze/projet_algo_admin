@@ -2,11 +2,11 @@
 
 namespace App\Entity;
 
-use App\Repository\PostRepository;
+use App\Repository\FriendshipRepository;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity(repositoryClass: PostRepository::class)]
-class Post
+#[ORM\Entity(repositoryClass: FriendshipRepository::class)]
+class Friendship
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -14,13 +14,13 @@ class Post
     private ?int $id = null;
 
     #[ORM\ManyToOne]
-    private ?User $author = null;
+    private ?User $user1 = null;
+
+    #[ORM\ManyToOne]
+    private ?User $user2 = null;
 
     #[ORM\Column(length: 255, nullable: true)]
-    private ?string $content = null;
-
-    #[ORM\Column(length: 255, nullable: true)]
-    private ?string $visibility = null;
+    private ?string $status = null;
 
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $createdAt = null;
@@ -30,38 +30,38 @@ class Post
         return $this->id;
     }
 
-    public function getAuthor(): ?User
+    public function getUser1(): ?User
     {
-        return $this->author;
+        return $this->user1;
     }
 
-    public function setAuthor(?User $author): static
+    public function setUser1(?User $user1): static
     {
-        $this->author = $author;
+        $this->user1 = $user1;
 
         return $this;
     }
 
-    public function getContent(): ?string
+    public function getUser2(): ?User
     {
-        return $this->content;
+        return $this->user2;
     }
 
-    public function setContent(?string $content): static
+    public function setUser2(?User $user2): static
     {
-        $this->content = $content;
+        $this->user2 = $user2;
 
         return $this;
     }
 
-    public function getVisibility(): ?string
+    public function getStatus(): ?string
     {
-        return $this->visibility;
+        return $this->status;
     }
 
-    public function setVisibility(?string $visibility): static
+    public function setStatus(?string $status): static
     {
-        $this->visibility = $visibility;
+        $this->status = $status;
 
         return $this;
     }
