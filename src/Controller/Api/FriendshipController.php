@@ -6,6 +6,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
 use App\Entity\Friendship;
+use App\Entity\Notification;
 use App\Repository\UserRepository;
 use App\Repository\FriendshipRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -136,9 +137,51 @@ final class FriendshipController extends AbstractController
         $friendship->setStatus('pending');
         $friendship->setCreatedAt(new \DateTimeImmutable());
 
+        $notification = new Notification();
+        $notification->setOwner($targetUser); // cible = celui qui reçoit la demande
+        $notification->setType('friend_request');
+        $notification->setContent($currentUser->getName() . ' vous a envoyé une demande d’ami.');
+        $notification->setIsRead(false);
+        $notification->setCreatedAt(new \DateTimeImmutable());
+
+        $em->persist($notification);
+
+
         $em->persist($friendship);
         $em->flush();
 
         return $this->json(['message' => 'Friend request sent']);
+    }
+
+    #[Route('/api/friends/suggestions', name: 'api_friend_suggestions', methods: ['GET'])]
+    public function suggestions(EntityManagerInterface $em, FriendshipRepository $repo): JsonResponse
+    {
+        $currentUser = $this->getUser();
+        $userFriends = $repo->findAcceptedFriends($currentUser);
+        $userFriendIds = array_map(fn($f) => $f->getId(), $userFriends);
+        $userFriendIds[] = $currentUser->getId(); // Exclure soi-même
+
+        $suggestions = [];
+
+        foreach ($userFriends as $friend) {
+            $friendFriends = $repo->findAcceptedFriends($friend);
+            foreach ($friendFriends as $ff) {
+                $ffId = $ff->getId();
+                if (!in_array($ffId, $userFriendIds) && !isset($suggestions[$ffId])) {
+                    $suggestions[$ffId] = $ff;
+                }
+            }
+        }
+
+        $result = [];
+        foreach ($suggestions as $user) {
+            $result[] = [
+                'id' => $user->getId(),
+                'name' => $user->getName(),
+                'email' => $user->getEmail(),
+            ];
+        }
+
+        return $this->json($result);
     }
 }

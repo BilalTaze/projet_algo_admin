@@ -53,6 +53,7 @@ final class MessageController extends AbstractController
         $message->setSender($sender);
         $message->setReceiver($receiver);
         $message->setContent($content);
+        $message->setIsRead(false);
         $message->setSentAt(new \DateTimeImmutable());
 
         $em->persist($message);
@@ -84,6 +85,10 @@ final class MessageController extends AbstractController
 
         $data = [];
         foreach ($messages as $msg) {
+            if ($msg->getReceiver() === $currentUser && !$msg->isRead()) {
+                $msg->setIsRead(true);
+            }
+
             $data[] = [
                 'id' => $msg->getId(),
                 'from' => $msg->getSender()->getId(),
@@ -92,7 +97,43 @@ final class MessageController extends AbstractController
                 'sentAt' => $msg->getSentAt()->format('Y-m-d H:i:s'),
             ];
         }
+        $em->flush();
 
         return $this->json($data);
+    }
+
+    #[Route('/api/messages/unread-count', name: 'api_unread_message_count', methods: ['GET'])]
+    public function unreadCount(EntityManagerInterface $em): JsonResponse
+    {
+        $user = $this->getUser();
+        $count = $em->createQueryBuilder()
+            ->select('COUNT(m.id)')
+            ->from(\App\Entity\Message::class, 'm')
+            ->where('m.receiver = :user')
+            ->andWhere('m.isRead = false')
+            ->setParameter('user', $user)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return $this->json(['unread' => (int) $count]);
+    }
+
+    #[Route('/api/messages/unread-count-by-friend', name: 'api_unread_by_friend', methods: ['GET'])]
+    public function unreadByFriend(EntityManagerInterface $em): JsonResponse
+    {
+        $user = $this->getUser();
+        $results = $em->createQuery(
+            'SELECT IDENTITY(m.sender) AS senderId, COUNT(m.id) AS count
+         FROM App\Entity\Message m
+         WHERE m.receiver = :user AND m.isRead = false
+         GROUP BY m.sender'
+        )->setParameter('user', $user)->getResult();
+
+        $mapped = [];
+        foreach ($results as $r) {
+            $mapped[$r['senderId']] = (int) $r['count'];
+        }
+
+        return $this->json($mapped);
     }
 }

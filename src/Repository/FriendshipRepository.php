@@ -5,6 +5,7 @@ namespace App\Repository;
 use App\Entity\Friendship;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
+use App\Entity\User;
 
 /**
  * @extends ServiceEntityRepository<Friendship>
@@ -16,28 +17,25 @@ class FriendshipRepository extends ServiceEntityRepository
         parent::__construct($registry, Friendship::class);
     }
 
-    //    /**
-    //     * @return Friendship[] Returns an array of Friendship objects
-    //     */
-    //    public function findByExampleField($value): array
-    //    {
-    //        return $this->createQueryBuilder('f')
-    //            ->andWhere('f.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->orderBy('f.id', 'ASC')
-    //            ->setMaxResults(10)
-    //            ->getQuery()
-    //            ->getResult()
-    //        ;
-    //    }
+    public function findAcceptedFriends(User $user): array
+    {
+        $qb = $this->createQueryBuilder('f');
+        $qb->where('f.status = :status')
+            ->andWhere('f.user1 = :user OR f.user2 = :user')
+            ->setParameter('status', 'accepted')
+            ->setParameter('user', $user);
 
-    //    public function findOneBySomeField($value): ?Friendship
-    //    {
-    //        return $this->createQueryBuilder('f')
-    //            ->andWhere('f.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->getQuery()
-    //            ->getOneOrNullResult()
-    //        ;
-    //    }
+        $friendships = $qb->getQuery()->getResult();
+
+        $friends = [];
+        foreach ($friendships as $f) {
+            if ($f->getUser1() === $user) {
+                $friends[] = $f->getUser2();
+            } else {
+                $friends[] = $f->getUser1();
+            }
+        }
+
+        return $friends;
+    }
 }
